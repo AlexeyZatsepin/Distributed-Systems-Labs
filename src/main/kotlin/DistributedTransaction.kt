@@ -9,6 +9,9 @@ import javax.transaction.xa.XAResource.TMNOFLAGS
 import javax.sql.XAConnection
 import javax.transaction.xa.Xid
 
+val USER = "a.zatsepin"
+val PASSWORD = "alexzatsepin"
+
 data class XidEx(val format: Int, val gtrid: ByteArray, val bqual: ByteArray) : Xid {
     override fun getBranchQualifier(): ByteArray {
         return bqual
@@ -26,18 +29,18 @@ data class XidEx(val format: Int, val gtrid: ByteArray, val bqual: ByteArray) : 
 
 fun getFlyDatabase(): PGXADataSource {
     val xaDataSourceFly = PGXADataSource()
-    xaDataSourceFly.databaseName = "fly-db"
-    xaDataSourceFly.user = "postgres"
-    xaDataSourceFly.password = "mysecretpassword"
+    xaDataSourceFly.databaseName = "flydb"
+    xaDataSourceFly.user = USER
+    xaDataSourceFly.password = PASSWORD
     xaDataSourceFly.logLevel = 2 // log level DEBUG = 2, INFO = 1
     return xaDataSourceFly
 }
 
 fun getHotelDatabase(): PGXADataSource {
     val xaDataSourceFly = PGXADataSource()
-    xaDataSourceFly.databaseName = "hotel-db"
-    xaDataSourceFly.user = "postgres"
-    xaDataSourceFly.password = "mysecretpassword"
+    xaDataSourceFly.databaseName = "hoteldb"
+    xaDataSourceFly.user = USER
+    xaDataSourceFly.password = PASSWORD
     xaDataSourceFly.logLevel = 2 // log level DEBUG = 2, INFO = 1
     return xaDataSourceFly
 }
