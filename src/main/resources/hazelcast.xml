@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hazelcast xsi:schemaLocation="http://www.hazelcast.com/schema/config hazelcast-config-3.9.3.xsd"
+           xmlns="http://www.hazelcast.com/schema/config"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <network>
+        <port port-count="20">5701</port>
+        <join>
+            <multicast enabled="false">
+            </multicast>
+            <tcp-ip enabled="true">
+                <member>machine1</member>
+                <member>localhost</member>
+            </tcp-ip>
+        </join>
+    </network>
+    <map name="customers">
+        <backup-count>0</backup-count>
+    </map>
+</hazelcast>

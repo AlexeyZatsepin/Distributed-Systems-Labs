@@ -2,6 +2,7 @@ import org.postgresql.xa.PGXADataSource
 import java.sql.SQLException
 import java.sql.Connection
 import java.sql.Statement
+import java.util.*
 import javax.transaction.xa.XAException
 import javax.transaction.xa.XAResource
 import javax.transaction.xa.XAResource.TMSUCCESS
@@ -23,6 +24,23 @@ data class XidEx(val format: Int, val gtrid: ByteArray, val bqual: ByteArray) : 
 
     override fun getFormatId(): Int {
         return format
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+        other as XidEx
+        if (format != other.format) return false
+        if (!Arrays.equals(gtrid, other.gtrid)) return false
+        if (!Arrays.equals(bqual, other.bqual)) return false
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = format
+        result = 31 * result + Arrays.hashCode(gtrid)
+        result = 31 * result + Arrays.hashCode(bqual)
+        return result
     }
 }
 
@@ -78,8 +96,8 @@ fun main(args: Array<String>) {
         flyXAResource!!.start(xidFly, TMNOFLAGS)
         hotelXAResource!!.start(xidHotel, TMNOFLAGS)
 
-        flyStatement!!.execute("INSERT INTO flight_booking VALUES (9,'1','1','1','1',CURRENT_TIMESTAMP)")
-        hotelStatement!!.execute("INSERT INTO hotel_booking VALUES (9,'1','1',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)")
+        flyStatement!!.execute("INSERT INTO flight_booking VALUES (0,'1','1','1','1',CURRENT_TIMESTAMP)")
+        hotelStatement!!.execute("INSERT INTO hotel_booking VALUES (0,'1','1',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)")
 
         flyXAResource.end(xidFly, TMSUCCESS)
         hotelXAResource.end(xidHotel, TMSUCCESS)
@@ -95,9 +113,6 @@ fun main(args: Array<String>) {
         }
     } catch (exception: SQLException) {
         exception.printStackTrace()
-        //handle by hand
-        //for master
-
     } catch (exception: XAException) {
         exception.printStackTrace()
     } finally {
