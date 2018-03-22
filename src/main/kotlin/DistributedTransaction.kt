@@ -44,25 +44,14 @@ data class XidEx(val format: Int, val gtrid: ByteArray, val bqual: ByteArray) : 
     }
 }
 
-
-fun getFlyDatabase(): PGXADataSource {
+fun getDatabase(dbname:String): PGXADataSource {
     val xaDataSourceFly = PGXADataSource()
-    xaDataSourceFly.databaseName = "flydb"
+    xaDataSourceFly.databaseName = dbname
     xaDataSourceFly.user = USER
     xaDataSourceFly.password = PASSWORD
     xaDataSourceFly.logLevel = 2 // log level DEBUG = 2, INFO = 1
     return xaDataSourceFly
 }
-
-fun getHotelDatabase(): PGXADataSource {
-    val xaDataSourceFly = PGXADataSource()
-    xaDataSourceFly.databaseName = "hoteldb"
-    xaDataSourceFly.user = USER
-    xaDataSourceFly.password = PASSWORD
-    xaDataSourceFly.logLevel = 2 // log level DEBUG = 2, INFO = 1
-    return xaDataSourceFly
-}
-
 
 fun main(args: Array<String>) {
     val flyConnXA: XAConnection?
@@ -73,20 +62,30 @@ fun main(args: Array<String>) {
     val hotelConn: Connection?
     val hotelXAResource: XAResource?
     val hotelStatement: Statement?
+    val accountConnXA: XAConnection?
+    val accountConn: Connection?
+    val accountXAResource: XAResource?
+    val accountStatement: Statement?
 
     val xidFly = XidEx(100, byteArrayOf(0x01), byteArrayOf(0x02))
-    val xidHotel = XidEx(100, byteArrayOf(0x01), byteArrayOf(0x22))
+    val xidHotel = XidEx(100, byteArrayOf(0x01), byteArrayOf(0x12))
+    val xidAccount = XidEx(100, byteArrayOf(0x01), byteArrayOf(0x22))
 
     try {
-        flyConnXA = getFlyDatabase().xaConnection
+        flyConnXA = getDatabase("flydb").xaConnection
         flyConn = flyConnXA!!.connection
         flyXAResource = flyConnXA.xaResource
         flyStatement = flyConn!!.createStatement()
 
-        hotelConnXA = getHotelDatabase().xaConnection
+        hotelConnXA = getDatabase("hoteldb").xaConnection
         hotelConn = hotelConnXA!!.connection
         hotelXAResource = hotelConnXA.xaResource
         hotelStatement = hotelConn!!.createStatement()
+
+        accountConnXA = getDatabase("accountdb").xaConnection
+        accountConn = accountConnXA!!.connection
+        accountXAResource = accountConnXA.xaResource
+        accountStatement = accountConn!!.createStatement()
     } catch (e: SQLException) {
         e.printStackTrace()
         return
@@ -95,21 +94,27 @@ fun main(args: Array<String>) {
     try {
         flyXAResource!!.start(xidFly, TMNOFLAGS)
         hotelXAResource!!.start(xidHotel, TMNOFLAGS)
+        accountXAResource!!.start(xidAccount, TMNOFLAGS)
 
-        flyStatement!!.execute("INSERT INTO flight_booking VALUES (0,'1','1','1','1',CURRENT_TIMESTAMP)")
-        hotelStatement!!.execute("INSERT INTO hotel_booking VALUES (0,'1','1',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)")
+        flyStatement!!.execute("INSERT INTO flight_booking VALUES (5,'1','1','1','1',CURRENT_TIMESTAMP)")
+        hotelStatement!!.execute("INSERT INTO hotel_booking VALUES (5,'1','1',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)")
+        accountStatement!!.execute("UPDATE accounts SET AMOUNT = AMOUNT-30 WHERE ID=0")
 
         flyXAResource.end(xidFly, TMSUCCESS)
         hotelXAResource.end(xidHotel, TMSUCCESS)
+        accountXAResource.end(xidAccount, TMSUCCESS)
 
         val ret1 = flyXAResource.prepare(xidFly)
         val ret2 = hotelXAResource.prepare(xidHotel)
-        if ((ret1 == XAResource.XA_OK) and (ret2 == XAResource.XA_OK)) {
+        val ret3 = accountXAResource.prepare(xidAccount)
+        if ((ret1 == XAResource.XA_OK) and (ret2 == XAResource.XA_OK) and (ret3 == XAResource.XA_OK)) {
             flyXAResource.commit(xidFly, false)
             hotelXAResource.commit(xidHotel, false)
+            accountXAResource.commit(xidAccount, false)
         } else {
             flyXAResource.rollback(xidFly)
             hotelXAResource.rollback(xidHotel)
+            accountXAResource.rollback(xidAccount)
         }
     } catch (exception: SQLException) {
         exception.printStackTrace()
@@ -125,6 +130,9 @@ fun main(args: Array<String>) {
             hotelConn.close()
             hotelConnXA.close()
 
+            accountStatement!!.close()
+            accountConn.close()
+            accountConnXA.close()
         } catch (e: SQLException) {
             e.printStackTrace()
         }

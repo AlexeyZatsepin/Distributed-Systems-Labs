@@ -1,4 +1,7 @@
 import com.hazelcast.client.HazelcastClient
+import com.hazelcast.client.config.ClientConfig
+import com.hazelcast.config.Config
+import com.hazelcast.config.MapConfig
 import com.hazelcast.core.IMap
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -15,6 +18,6 @@ fun main(args: Array<String>) {
     val ex = Executors.newSingleThreadScheduledExecutor()
     ex.scheduleAtFixedRate({
         System.out.println("Client"+ Thread.currentThread().id +" Map Size:" + map.size)
-    }, 0, 3, TimeUnit.SECONDS)
+    }, 0, 2, TimeUnit.SECONDS)
 
 }
