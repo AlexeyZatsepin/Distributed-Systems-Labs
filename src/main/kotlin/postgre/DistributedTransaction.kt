@@ -1,3 +1,5 @@
+package postgre
+
 import org.postgresql.xa.PGXADataSource
 import java.sql.SQLException
 import java.sql.Connection
