@@ -1,9 +1,6 @@
-package hazelcast
+package hazelcast.backup
 
 import com.hazelcast.client.HazelcastClient
-import com.hazelcast.client.config.ClientConfig
-import com.hazelcast.config.Config
-import com.hazelcast.config.MapConfig
 import com.hazelcast.core.IMap
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
