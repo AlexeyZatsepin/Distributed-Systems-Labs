@@ -1,34 +1,31 @@
 package hazelcast.transactions
 
-import com.hazelcast.client.HazelcastClient
-import javax.transaction.xa.XAResource
+import com.hazelcast.transaction.TransactionOptions
+import com.hazelcast.core.Hazelcast
 
 
 fun main(args: Array<String>) {
-    var client = HazelcastClient.newHazelcastClient()
+    val hazelcastInstance = Hazelcast.newHazelcastInstance()
 
-    var tm = // TODO
-    tm.setTransactionTimeout(60)
-    tm.begin()
+    val options = TransactionOptions()
+            .setTransactionType(TransactionOptions.TransactionType.TWO_PHASE)
 
+    val context = hazelcastInstance.newTransactionContext(options)
 
-    var xaResource = client.xaResource
-    var transaction = tm.getTransaction()
-    transaction.enlistResource(xaResource)
+    context.beginTransaction()
 
-    try{
-        var context = xaResource.transactionContext
-        var map = context.getMap<String,String>("map")
-        map.put("key","value")
-        val queue=context.getQueue<String>("queue")
-        queue.offer("item")
+    val queue = context.getQueue<Any>("queue")
+    val map = context.getMap<Any, Any>("map")
+    val set = context.getSet<Any>("set")
 
-        transaction.delistResource(xaResource, XAResource.TMSUCCESS)
-        tm.commit()
-    }catch(e:Throwable){
-        e.printStackTrace()
-        transaction.delistResource(xaResource,XAResource.TMFAIL)
-        tm.rollback()
+    try {
+        val obj = queue.poll()
+        map.put("1", "value1")
+        set.add("value")
+        context.commitTransaction()
+        println("commited all")
+    } catch (t: Throwable) {
+        context.rollbackTransaction()
     }
 
 }
