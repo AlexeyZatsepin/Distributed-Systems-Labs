@@ -9,26 +9,35 @@ import com.hazelcast.config.MapConfig
 
 
 fun main(args: Array<String>) {
-    val config = Config()
-    val network = config.networkConfig
-    network.setPort(5701).portCount = 20
-    network.isPortAutoIncrement = true
+    val cfg = Config()
+
+    val network = cfg.networkConfig
+    network.setPort(5701).isPortAutoIncrement = true
+
     val join = network.join
     join.multicastConfig.isEnabled = false
     join.tcpIpConfig
-            .addMember("machine1")
-            .addMember("localhost").isEnabled = true
+            .setEnabled(true)
+            .addMember("192.168.43.128")
+            .addMember("192.168.43.230")
+            .addMember("192.168.43.195")
+            .addMember("192.168.43.27")
 
     val mapCfg = MapConfig()
-    mapCfg.name = "customers"
-    mapCfg.backupCount = 0
+    val mapName = "customers"
+    mapCfg.name = mapName
+    mapCfg.backupCount = 4
 
-    config.addMapConfig(mapCfg)
+    cfg.addMapConfig(mapCfg)
 
-    val instance = Hazelcast.newHazelcastInstance(config)
+    val instance = Hazelcast.newHazelcastInstance(cfg)
 
-    val map: IMap<Int, String> = instance.getMap("customers")
+    val map: IMap<String, String> = instance.getMap(mapName)
 
+
+    for (i in 0 .. 9999) {
+        map.put("Alexey" + i,"Alexey")
+    }
     val ex = Executors.newSingleThreadScheduledExecutor()
     ex.scheduleAtFixedRate({
         System.out.println("Server Map Size:" + map.size)

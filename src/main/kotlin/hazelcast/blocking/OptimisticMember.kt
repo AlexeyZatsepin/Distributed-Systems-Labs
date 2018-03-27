@@ -1,45 +1,46 @@
 package hazelcast.blocking
 
-import java.io.Serializable
+import com.hazelcast.config.Config
+import Value
 import com.hazelcast.core.Hazelcast
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 fun main(args: Array<String>) {
-    val hz = Hazelcast.newHazelcastInstance()
-    val map = hz.getMap<String, Value>("map")
+    val cfg = Config()
+
+    val network = cfg.networkConfig
+    network.setPort(5701).isPortAutoIncrement = true
+
+    val join = network.join
+    join.multicastConfig.isEnabled = false
+    join.tcpIpConfig
+            .setEnabled(true)
+            .addMember("192.168.43.128")
+            .addMember("192.168.43.230")
+            .addMember("192.168.43.195")
+            .addMember("192.168.43.27")
+    val hz = Hazelcast.newHazelcastInstance(cfg)
+    val map = hz.getMap<String, Int>("map")
     val key = "1"
-    map.put(key, Value())
+    map.putIfAbsent(key, 0)
     println("Starting")
     for (k in 0..999) {
         if (k % 10 == 0) println("At: " + k)
         while (true) {
             val oldValue = map[key]
-            val newValue = Value(oldValue)
-            Thread.sleep(10)
-            newValue.amount++
+            var newValue = oldValue!!
+            Thread.sleep(1)
+            newValue++
+//            map.replace(key,oldValue,newValue)
             if (map.replace(key,oldValue,newValue))
                 break
-        }
+//        }
     }
-    println("Finished! Result = " + map[key]!!.amount)
-}
-
-internal class Value : Serializable {
-    var amount: Int = 0
-
-    constructor()
-
-    constructor(that: Value?) {
-        this.amount = that!!.amount
     }
-
-    override fun equals(o: Any?): Boolean {
-        if (o === this) return true
-        if (o !is Value) return false
-        val that = o as Value?
-        return that!!.amount == this.amount
-    }
-
-    override fun hashCode(): Int {
-        return amount
-    }
+    println("Finished! Result = " + map[key])
+    val ex = Executors.newSingleThreadScheduledExecutor()
+    ex.scheduleAtFixedRate({
+        System.out.println("Result: " + map[key])
+    }, 0, 5, TimeUnit.SECONDS)
 }
