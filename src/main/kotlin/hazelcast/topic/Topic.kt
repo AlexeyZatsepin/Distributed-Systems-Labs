@@ -1,10 +1,13 @@
-package hazelcast.blocking
+package hazelcast.topic
 
+import MyEvent
 import com.hazelcast.config.Config
-import Value
 import com.hazelcast.core.Hazelcast
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+
+
+private val messageExecutor = Executors.newSingleThreadExecutor()
 
 fun main(args: Array<String>) {
     val cfg = Config()
@@ -20,27 +23,24 @@ fun main(args: Array<String>) {
             .addMember("192.168.43.230")
             .addMember("192.168.43.195")
             .addMember("192.168.43.27")
-    val hz = Hazelcast.newHazelcastInstance(cfg)
-    val map = hz.getMap<String, Int>("map")
-    val key = "1"
-    map.putIfAbsent(key, 0)
-    println("Starting")
-    for (k in 0..999) {
-        if (k % 10 == 0) println("At: $k")
-        while (true) {
-            val oldValue = map[key]
-            var newValue = oldValue!!
-            Thread.sleep(1)
-            newValue++
-//            map.replace(key,oldValue,newValue)
-            if (map.replace(key,oldValue,newValue))
-                break
-//        }
-    }
-    }
-    println("Finished! Result = " + map[key])
+    val hazelcastInstance = Hazelcast.newHazelcastInstance(cfg)
+    val topic = hazelcastInstance.getTopic<Any>("default")
+    topic.addMessageListener({
+            val myEvent = it.messageObject as MyEvent
+            println("Message received = " + myEvent.toString())
+            if (myEvent.isHeavyweight()) {
+                messageExecutor.execute({ doHeavyweightStuff(myEvent)})
+            }
+    })
+    topic.publish(MyEvent("Alexey"))
+
     val ex = Executors.newSingleThreadScheduledExecutor()
     ex.scheduleAtFixedRate({
-        System.out.println("Result: " + map[key])
+        topic.publish(MyEvent("Alexey"))
     }, 0, 5, TimeUnit.SECONDS)
+}
+
+fun doHeavyweightStuff(myEvent: MyEvent) {
+    println("ok")
+    Thread.sleep(1000)
 }
